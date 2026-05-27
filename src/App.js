@@ -6,6 +6,7 @@ function App() {
   const [history, setHistory] = useState([]);     // 记录历史，用于撤销
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [markerSize, setMarkerSize] = useState(13); // 新增：圈圈半径大小状态 (默认13，直径26px，比以前更大)
   
   const canvasRef = useRef(null);
 
@@ -103,29 +104,28 @@ function App() {
 
       // 定义每 20 个号码的颜色 (绿, 橙, 蓝, 蓝紫, 红)
       const colors = ["#22c55e", "#f97316", "#3b82f6", "#8b5cf6", "#ef4444"];
-      const markerSize = 8; // 圆点半径大小
 
       // 画坐标点
       markers.forEach((marker, index) => {
         const color = colors[Math.floor(index / 20) % colors.length];
         
         ctx.beginPath();
-        ctx.arc(marker.x, marker.y, markerSize, 0, 2 * Math.PI);
+        ctx.arc(marker.x, marker.y, markerSize, 0, 2 * Math.PI); // 动态使用绑定的半径大小
         ctx.fillStyle = color;
         ctx.fill();
         ctx.lineWidth = 2;
         ctx.strokeStyle = "white";
         ctx.stroke();
 
-        // 画数字
+        // 画数字 (字号随着圈圈大小动态缩放，确保完美居中)
         ctx.fillStyle = "white";
-        ctx.font = "bold 10px Arial";
+        ctx.font = `bold ${Math.round(markerSize * 0.9)}px Arial`; 
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(index + 1, marker.x, marker.y);
       });
     };
-  }, [imageSrc, markers]);
+  }, [imageSrc, markers, markerSize]); // 新增：将 markerSize 放入监听数组，拉动时实时重绘Canvas
 
   // 4. 点击图片增删逻辑
   const handleCanvasClick = (e) => {
@@ -143,7 +143,7 @@ function App() {
     const clickX = (e.clientX - rect.left) * scaleX;
     const clickY = (e.clientY - rect.top) * scaleY;
 
-    const hitRadius = 15; // 点击判定的容错半径
+    const hitRadius = Math.max(15, markerSize); // 点击判定的容错半径随着圈圈变大而自动变大
     let hitIndex = -1;
 
     // 检查是否点中了已有的管子
@@ -163,7 +163,7 @@ function App() {
       newMarkers.splice(hitIndex, 1);
       setMarkers(newMarkers);
     } else {
-      // 如果没点中，就新增一个
+      // If not hit, add a new one
       setMarkers([...markers, { x: clickX, y: clickY }]);
     }
   };
@@ -182,7 +182,7 @@ function App() {
       {/* 完全复刻的 UI 样式 */}
       <style>{`
         .superlon-header { font-family: 'Arial Black', sans-serif; font-style: italic; color: #0056b8; font-size: 3.5rem; text-align: center; margin-bottom: 0; line-height: 1;}
-        .superlon-reg { font-size: 1.5rem; vertical-align: top; }
+        .superlon-reg { font-size: 1.5rem; vertical-align: top; margin-left: 8px; } /* 优化：拉开 ® 与 N 的间隙 */
         .header-divider { height: 1px; background-color: #e2e8f0; width: 60%; margin: 10px auto; }
         .subtitle { color: #0056b8; font-weight: bold; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
         .metric-container { background-color: #ffffff; border: 1px solid #f1f5f9; border-radius: 16px; padding: 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); margin: 20px 0; text-align: center;}
@@ -210,7 +210,8 @@ function App() {
           disabled={loading}
           style={{ display: 'block', margin: '0 auto' }}
         />
-        {loading && <p style={{ textAlign: 'center', color: '#0056b8', fontWeight: 'bold' }}>⚡ 正在极速识别，请稍候...</p>}
+        {/* 优化：修改为英文 Loading 提示 */}
+        {loading && <p style={{ textAlign: 'center', color: '#0056b8', fontWeight: 'bold' }}>⚡ Analyzing image, please wait...</p>}
         {error && <p style={{ textAlign: 'center', color: 'red' }}>错误: {error}</p>}
       </div>
 
@@ -231,9 +232,23 @@ function App() {
             </button>
           </div>
 
-          <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>
+          <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginBottom: '10px' }}>
             👆 Tap image to add missing tubes or remove incorrect ones.
           </p>
+
+          {/* 优化：新增圈圈大小动态调节拉条（Slider） */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 'bold' }}>Dot Size:</span>
+            <input 
+              type="range" 
+              min="8"    // 允许缩到的最小半径
+              max="25"   // 允许放到的最大半径
+              value={markerSize} 
+              onChange={(e) => setMarkerSize(Number(e.target.value))}
+              style={{ cursor: 'pointer', width: '150px' }}
+            />
+            <span style={{ fontSize: '0.875rem', color: '#64748b' }}>{markerSize * 2}px</span>
+          </div>
 
           {/* 交互式画板 */}
           <div style={{ display: 'flex', justifyContent: 'center', border: '2px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
