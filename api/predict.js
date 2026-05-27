@@ -1,33 +1,28 @@
-from cog import BasePredictor, Input, Path
-from ultralytics import YOLO
-import torch
+// 这个才是 api/predict.js 应该有的样子！
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ detail: "Method not allowed" });
 
-class Predictor(BasePredictor):
-    def setup(self) -> None:
-        # 预加载模型到内存，开启无梯度模式加速
-        self.model = YOLO('best.pt')
+  try {
+    const response = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${process.env.REPLICATE_API_TOKEN}`, 
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: "YOUR_MODEL_VERSION_ID_HERE", // 等我们上传完模型，这里要换成一串数字
+        input: { image: req.body.image }, 
+      }),
+    });
 
-    def predict(
-        self,
-        image: Path = Input(description="Input image to count tubes"),
-    ) -> list: # 注意这里：我们将返回一个列表 (list) 而不是图片路径 (Path)
-        
-        with torch.no_grad():
-            results = self.model.predict(
-                source=str(image), 
-                verbose=False, 
-                save=False,
-                conf=0.25
-            )
-        
-        # 提取所有识别到的管子的中心坐标 (X, Y)
-        coordinates = []
-        for box in results[0].boxes:
-            x_center, y_center, w, h = box.xywh[0]
-            coordinates.append({
-                "x": float(x_center),
-                "y": float(y_center)
-            })
-            
-        # 直接返回坐标数据给前端，速度极快
-        return coordinates
+    if (response.status !== 201) {
+      const error = await response.json();
+      return res.status(500).json({ detail: error.detail });
+    }
+
+    const prediction = await response.json();
+    res.status(201).json(prediction);
+  } catch (error) {
+    res.status(500).json({ detail: error.message });
+  }
+}
