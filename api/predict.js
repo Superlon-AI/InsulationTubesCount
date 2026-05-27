@@ -3,17 +3,16 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ detail: "Method not allowed" });
 
   try {
-    const response = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Token ${process.env.REPLICATE_API_TOKEN}`, 
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        version: "YOUR_MODEL_VERSION_ID_HERE", // 等我们上传完模型，这里要换成一串数字
-        input: { image: req.body.image }, 
-      }),
-    });
+    const response = await fetch("https://api.replicate.com/v1/models/superlon-ai/insulation-tube-counter/predictions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Token ${process.env.REPLICATE_API_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                input: { image: req.body.image },
+            }),
+        });
 
     if (response.status !== 201) {
       const error = await response.json();
