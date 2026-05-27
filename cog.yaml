@@ -9,4 +9,5 @@ build:
     - "torchvision==0.16.2"
     - "ultralytics"
     - "opencv-python-headless"
+    - "numpy==1.26.4"
 predict: "predict.py:Predictor"
