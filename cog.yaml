@@ -1,0 +1,12 @@
+build:
+  gpu: true
+  system_packages:
+    - "libgl1-mesa-glx"
+    - "libglib2.0-0"
+  python_version: "3.11"
+  python_packages:
+    - "torch==2.1.2"
+    - "torchvision==0.16.2"
+    - "ultralytics"
+    - "opencv-python-headless"
+predict: "predict.py:Predictor"
